@@ -1,1 +1,153 @@
-hewtiuhfdsiufshiuefsd
+#pragma region VEXcode Generated Robot Configuration
+// Make sure all required headers are included.
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
+#include <string.h>
+
+
+#include "vex.h"
+
+using namespace vex;
+
+// Brain should be defined by default
+brain Brain;
+
+
+// START IQ MACROS
+#define waitUntil(condition)                                                   \
+  do {                                                                         \
+    wait(5, msec);                                                             \
+  } while (!(condition))
+
+#define repeat(iterations)                                                     \
+  for (int iterator = 0; iterator < iterations; iterator++)
+// END IQ MACROS
+
+
+// Robot configuration code.
+inertial BrainInertial = inertial();
+motor rightMotor = motor(PORT6, true);
+motor leftMotor = motor(PORT1, false);
+controller Controller = controller();
+
+
+// generating and setting random seed
+void initializeRandomSeed(){
+  wait(100,msec);
+  double xAxis = BrainInertial.acceleration(xaxis) * 1000;
+  double yAxis = BrainInertial.acceleration(yaxis) * 1000;
+  double zAxis = BrainInertial.acceleration(zaxis) * 1000;
+  // Combine these values into a single integer
+  int seed = int(
+    xAxis + yAxis + zAxis
+  );
+  // Set the seed
+  srand(seed); 
+}
+
+
+
+void vexcodeInit() {
+
+  // Initializing random seed.
+  initializeRandomSeed(); 
+}
+
+
+// define variable for remote controller enable/disable
+bool RemoteControlCodeEnabled = true;
+
+#pragma endregion VEXcode Generated Robot Configuration
+
+//----------------------------------------------------------------------------
+//                                                                            
+//    Module:       main.cpp                                                  
+//    Author:       {author}                                                  
+//    Created:      {date}                                                    
+//    Description:  IQ project                                                
+//                                                                            
+//----------------------------------------------------------------------------
+
+// Include the IQ Library
+#include "iq_cpp.h"
+
+// Allows for easier use of the VEX Library
+using namespace vex;
+
+void movement(double left_stick_position, double right_stick_position)
+{
+  double moving_value = left_stick_position;
+  double turning_value = right_stick_position - 10; // change the 10 to other stuff, this is to avoid having left on 100 and right on0 or vice versa
+  double left_motor_speed = moving_value + turning_value;
+  double right_motor_speed = moving_value - turning_value;
+
+  leftMotor.setVelocity(left_motor_speed,percent);
+  rightMotor.setVelocity(right_motor_speed,percent);
+
+  leftMotor.spin(forward);
+  rightMotor.spin(forward);
+  /*
+
+  move left trigger up and down to control moving fwd and bwd
+  move right trigger left and right to control turning left and right
+  example, if left is straight up and right trigger is to the right.
+
+  moving value = 100 (fwd positive) and turning_value = 100(right positive i think)
+  left_motor = 100 and right motor is 10 (100-90 since we made turning_value right_stick_position - 10)
+  so it turns to the right
+  */
+}
+void turning(double right_stick_position)
+{
+  if (right_stick_position > 0)
+  {
+    leftMotor.spin(forward);
+    rightMotor.spin(reverse);
+  }
+  else if (right_stick_position < 0)
+  {
+    leftMotor.spin(reverse);
+    rightMotor.spin(forward);
+  }
+  else
+  {
+    leftMotor.stop();
+    rightMotor.stop();
+  }
+}
+
+
+
+int main() {
+  // Initializing Robot Configuration. DO NOT REMOVE!
+  vexcodeInit();
+  // Begin project code
+  
+  RemoteControlCodeEnabled = true;
+  leftMotor.setVelocity(50,percent);
+  rightMotor.setVelocity(50,percent);
+
+  
+
+  bool go = true;
+  while (go){
+  double left_stick = Controller.AxisA.position(); // AxisA is vert for left
+  double right_stick = Controller.AxisC.position(); // AxisC is hor for right
+  if (left_stick !=0 && right_stick !=0)
+  {
+  movement(left_stick,right_stick);  
+  }
+  else if (left_stick == 0 && right_stick !=0)
+  {
+    turning(right_stick);
+  }
+  wait(0.25,seconds);
+  
+  // for now just stop program with brain button
+  }
+
+
+
+}
