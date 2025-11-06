@@ -76,15 +76,23 @@ bool RemoteControlCodeEnabled = true;
 // Allows for easier use of the VEX Library
 using namespace vex;
 
+void calibrate_screen()
+{
+  Brain.Screen.setCursor(2, 1);
+  Brain.Screen.clearScreen();
+}
+
+
+
 void movement(double left_stick_position, double right_stick_position)
 {
   double moving_value = left_stick_position;
-  double turning_value = right_stick_position - 10; // change the 10 to other stuff, this is to avoid having left on 100 and right on0 or vice versa
-  double left_motor_speed = moving_value + turning_value;
-  double right_motor_speed = moving_value - turning_value;
+  double turning_value = right_stick_position ; // change the 10 to other stuff, this is to avoid having left on 100 and right on0 or vice versa
+  double left_motor_speed = moving_value + turning_value - (turning_value/2);
+  double right_motor_speed = moving_value - turning_value + (turning_value/2);
 
-  leftMotor.setVelocity(left_motor_speed,percent);
-  rightMotor.setVelocity(right_motor_speed,percent);
+  leftMotor.setVelocity(left_motor_speed/2,percent);
+  rightMotor.setVelocity(right_motor_speed/2,percent);
 
   leftMotor.spin(forward);
   rightMotor.spin(forward);
@@ -100,16 +108,18 @@ void movement(double left_stick_position, double right_stick_position)
   */
 }
 void turning(double right_stick_position)
-{
+{ 
+  leftMotor.setVelocity(50,percent);
+  rightMotor.setVelocity(50,percent);
   if (right_stick_position > 0)
-  {
-    leftMotor.spin(forward);
-    rightMotor.spin(reverse);
-  }
-  else if (right_stick_position < 0)
   {
     leftMotor.spin(reverse);
     rightMotor.spin(forward);
+  }
+  else if (right_stick_position < 0)
+  {
+    leftMotor.spin(forward);
+    rightMotor.spin(reverse);
   }
   else
   {
@@ -120,30 +130,146 @@ void turning(double right_stick_position)
 
 
 
+void setup_scans(int& scan_press)
+{
+ bool setup = true;
+
+  calibrate_screen();
+  while (setup)
+  {
+    calibrate_screen();
+
+    Brain.Screen.print("Scans : %d", scan_press);
+
+
+    if (Controller.ButtonEDown.pressing())
+    {
+      Brain.Screen.setCursor (4,1);
+      Brain.Screen.print("scancoinfirm");
+      wait(1,seconds);
+      setup=false;
+    }
+    
+
+    if (Controller.ButtonEUp.pressing())
+    {
+      scan_press+=1;
+      while (Controller.ButtonEUp.pressing())
+      {
+        wait (50,msec);
+      }
+    }
+
+
+    wait(75,msec);
+  }
+}
+
+int level_reducer(int level_press)
+{
+  int modulus = level_press % 3;
+  if (modulus == 1)
+  {
+    return 1;
+  }
+  else if (modulus == 2)
+  {
+    return 2;
+  }
+  else
+  {
+    return 3;
+  }
+}
+
+void setup_level(int& level_press, int& level_n)
+{
+ bool setup = true;
+
+  calibrate_screen();
+  while (setup)
+  {
+    calibrate_screen();
+    level_n = level_reducer(level_press);
+    Brain.Screen.print("level : %d", level_n);
+
+
+    if (Controller.ButtonFDown.pressing())
+    {
+      Brain.Screen.setCursor (4,1);
+      Brain.Screen.print("levelconf");
+      level_n = level_reducer(level_press);
+
+      wait(0.5,seconds);
+      setup=false;
+    }
+    
+
+    if (Controller.ButtonFUp.pressing())
+    {
+      level_press+=1;
+      while (Controller.ButtonFUp.pressing())
+      {
+        wait (50,msec);
+      }
+    }
+
+
+    wait(75,msec);
+  }
+}
+
+
+
+
 int main() {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
   // Begin project code
-  
+ 
+  int scan_press = 0;
+  int level_press = 1;
+
+
+  calibrate_screen();
   RemoteControlCodeEnabled = true;
+  setup_scans(scan_press);
+  calibrate_screen();
+  int level_n = 0;
+  setup_level(level_press,level_n);
+  calibrate_screen();
+
+  Brain.Screen.print("Scans : %d", scan_press);
+  Brain.Screen.setCursor (4,1);
+  Brain.Screen.print("level : %d", level_n);
+
+
+
   leftMotor.setVelocity(50,percent);
   rightMotor.setVelocity(50,percent);
 
   
 
   bool go = true;
-  while (go){
-  double left_stick = Controller.AxisA.position(); // AxisA is vert for left
-  double right_stick = Controller.AxisC.position(); // AxisC is hor for right
-  if (left_stick !=0 && right_stick !=0)
+  while (go)
   {
-  movement(left_stick,right_stick);  
-  }
-  else if (left_stick == 0 && right_stick !=0)
-  {
-    turning(right_stick);
-  }
-  wait(0.25,seconds);
+    double left_stick = Controller.AxisA.position(); // AxisA is vert for left
+    double right_stick = Controller.AxisC.position(); // AxisC is hor for right
+    if (left_stick !=0 && right_stick !=0 || (left_stick !=0 && right_stick == 0))
+    {
+    movement(left_stick,right_stick);  
+    }
+    else if (left_stick == 0 && right_stick !=0)
+    {
+      turning(right_stick);
+    }
+    else
+    {
+      
+      leftMotor.stop(brake);
+      rightMotor.stop(brake);
+    }
+    wait(0.25,seconds);
   
   // for now just stop program with brain button
   }
