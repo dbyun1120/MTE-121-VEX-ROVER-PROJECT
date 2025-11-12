@@ -1,0 +1,76 @@
+using namespace vex;
+#include "iq_cpp.h"
+#include <cmath> 
+
+
+void Update_Position(const float wheel_circumference, float &x, float &y, float &theta, float &prev_left_rotation, float &prev_right_rotation)
+{
+  float left_rotation = MotorLeft.position(turns);
+  float right_rotation = MotorRight.position(turns);
+
+  float difference_left = (left_rotation - prev_left_rotation)*wheel_circumference; 
+  float difference_right = (right_rotation - prev_right_rotation)*wheel_circumference; 
+  prev_left_rotation = left_rotation;
+  prev_right_rotation = right_rotation; 
+
+  //distance the middle of the robot travels forward
+  float distance_forward = (difference_left + difference_right)/2.0;
+
+  //convert angle to radians
+  theta = BrainInertial.heading(degrees) * M_PI / 180.0;
+
+  x += distance_forward * cos(theta);
+  y += distance_forward * sin(theta);
+}
+
+int main() {
+  // Initializing Robot Configuration. DO NOT REMOVE!
+  vexcodeInit();
+  // Begin project code
+
+
+  const float wheel_circumference = 20; //cm
+
+  float x = 0.0;
+  float y = 0.0
+  float theta = 0.0;
+
+  float prev_left_rotation = 0.0;
+  float prev_right_rotation = 0.0;
+
+
+  BrainInertial.setHeading(0, degrees);
+  MotorLeft.setPosition(0, degrees);
+  MotorRight.setPosition(0, degrees);
+
+
+  /*
+  I don't know how we're going to tell the system to track position. 
+  I just made a bool value of "if program is running == true".
+  I also made another bool value to test if the screen is free. 
+  Again, something we can change later.
+  */
+
+  bool program_running = true; 
+  bool screen_free = true; 
+  while(program_running){
+
+    Update_Position(wheel_circumference, x, y, theta, prev_left_rotation, prev_right_rotation);
+
+    if(screen_free == true){
+      Brain.Screen.clearScreen(); 
+      Brain.Screen.setCursor(1, 1);
+      Brain.Screen.print("X: %.2f cm", x);
+      Brain.Screen.newLine();
+      Brain.Screen.print("Y: %.2f cm", y);
+      Brain.Screen.newLine();
+      Brain.Screen.print("Heading: %.2f deg", theta*180/M_PI);
+    }
+
+    //optional wait so we don't fry the Brain
+    //wait(10, msec);
+
+  }
+
+
+}
