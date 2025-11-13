@@ -1,0 +1,49 @@
+void Start_Scan(string direction)
+{
+  //Motor spins counterclockwise
+
+  DistanceMotor.spinFor(direction, 360, degrees);
+  wait(50, msec);
+
+}
+
+void Scan_to_Array(float &x, float &y)
+{
+
+  DistanceMotor.setPosition(0, degrees);
+
+  Start_Scan(forward);
+
+  while(DistanceMotor.isSpinning()){
+    float angle_deg = DistanceMotor.position(degrees);
+    float angle_radians = angle_deg * (M_PI/180); 
+    
+    if(Distance7.isObjectDetected()){
+      float distance_cm = Distance7.objectDistance(mm)/10.0;
+
+      // Object coordinates relative to the robot’s current location
+      int x_obj = x_robot + (int)(distance_cm * cos(radians));
+      int y_obj = y_robot + (int)(distance_cm * sin(radians));
+
+      // Stay inside map boundaries
+      //Since we can now map relative to the robot's position,
+      //we can make the grid wayyy bigger, like 1m x 1m. 20cm x 20cm is tiny 
+      //These values are changeable to the size of the actual grid map we want
+      if (x_obj >= 0 && x_obj < 20 && y_obj >= 0 && y_obj < 20) {
+        scan_info[y_obj][x_obj] = 1; // mark obstacle
+      }
+    }
+  }
+
+  Start_Scan(reverse)
+  
+}
+
+
+int main ()
+{
+  double scan_info[20][20]{};
+
+  //Say we have the x and y from the find_position function
+  Scan_to_Array(x, y);
+}
