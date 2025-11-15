@@ -1,0 +1,19 @@
+int cycle_count = 0;
+int n = 0;   // this is the number of scans that we predetermine in our controller 
+
+void shut_down() {
+    Brain.Screen.clearScreen();
+    Brain.Screen.setCursor(1, 1);
+    Brain.Screen.print("Limit reached.");
+    Brain.Screen.newLine();
+    Brain.Screen.print("Shutting down.");
+
+    leftMotor.stop();
+    rightMotor.stop();
+    turnMotor.stop();
+
+    wait(1000, msec);
+    brain.programStop();
+}
+
+//not sure how to run this after n scans tho 
