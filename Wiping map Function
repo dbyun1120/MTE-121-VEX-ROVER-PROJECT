@@ -1,0 +1,17 @@
+const int MAP_SIZE = 100;              // 100 by 100 grid
+int costmap[MAP_SIZE][MAP_SIZE];       // each cell is 1 or 0
+//0 means empty
+//1 means that theres something there 
+
+void clear_map(int map[][100], int size) { //map is our array and size is how big our function is 
+    for (int x = 0; x < size; x++) { //the for loop goes through every column 
+        for (int y = 0; y < size; y++) { //this for loop goes through every row 
+            map[x][y] = 0; //from here, every x and y value gets a value of 0, therefore, resetting the whole thing 
+        }
+    }
+}
+
+
+
+//clear_map(costmap, MAP_SIZE);
+ we will call this in int main
