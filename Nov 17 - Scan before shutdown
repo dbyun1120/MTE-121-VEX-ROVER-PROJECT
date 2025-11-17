@@ -1,4 +1,25 @@
-void Scan_to_Shutdown(int& )
+int Scan_to_Shutdown(int& scan_press)
 {
+  while(scan_press > 0)
+  {
+    while(!Controller.ButtonEUp.pressing()){} // We can change which button starts the scan. 
+    while(Controller.ButtonEUp.pressing()){}
+    scan_press--; 
+
+    scan_to_array(scan_info[128][128]);
+  }
+
+  armdown();
+  //space to call return to origin function, if possible. 
+  return 0; 
   
+}
+
+
+int main()
+{
+  int shutdown = Scan_to_Shutdown(scan_press);
+  if(shutdown == 0){
+    return 0; 
+  {
 }
