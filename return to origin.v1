@@ -1,0 +1,152 @@
+void Update_Position(const float wheel_circumference, float &x, float &y, float &theta, float &prev_left_rotation, float &prev_right_rotation)
+{
+    float left_rotation = leftMotor.position(turns);
+    float right_rotation = rightMotor.position(turns);
+
+    float difference_left  = (left_rotation - prev_left_rotation)  * wheel_circumference;
+    float difference_right = (right_rotation - prev_right_rotation) * wheel_circumference;
+
+    prev_left_rotation  = left_rotation;
+    prev_right_rotation = right_rotation;
+
+    float distance_forward = (difference_left + difference_right) / 2.0;
+
+    // Update global heading
+    theta = BrainInertial.heading(degrees) * M_PI / 180.0;
+
+    x += distance_forward * cos(theta);
+    y += distance_forward * sin(theta);
+}
+
+float Normalize_Angle(float angle)
+{
+    //fmod is basically % but for float, at least i think
+    angle = fmod(angle, 360.0);
+    if(angle < 0) angle += 360.0;
+    return angle;
+}
+
+void Stop_Driving() {
+    leftMotor.stop();
+    rightMotor.stop();
+}
+
+void Turn_To_Angle(float target_angle)
+{
+    target_angle = Normalize_Angle(target_angle);
+
+    float current = BrainInertial.heading(degrees);
+    float error   = target_angle - current;
+
+    if(error > 180)  error -= 360;
+    if(error < -180) error += 360;
+
+    while(fabs(error) > 2) {
+
+        if(error > 0) {
+            leftMotor.spin(reverse);
+            rightMotor.spin(forward);
+        } else {
+            leftMotor.spin(forward);
+            rightMotor.spin(reverse);
+        }
+
+        wait(20, msec);
+
+        current = BrainInertial.heading(degrees);
+        error = target_angle - current;
+
+        if(error > 180)  error -= 360;
+        if(error < -180) error += 360;
+    }
+
+    Stop_Driving();
+}
+
+void Return_To_Origin(float &x, float &y, float &theta, const float wheel_circumference, float &prev_left_rotation, float &prev_right_rotation)
+{
+    float angle_to_origin = atan2(-y, -x) * (180.0 / M_PI);
+    angle_to_origin = Normalize_Angle(angle_to_origin);
+
+    Turn_To_Angle(angle_to_origin);
+
+    while(fabs(x) > 5 || fabs(y) > 5)
+    {
+
+        if (Bumper.pressing())
+        {
+            leftMotor.spin(reverse);
+            rightMotor.spin(reverse);
+            wait(400, msec);
+            Stop_Driving();
+
+            // new temporary target
+            float targetX = x + 50;
+            float targetY = y + 50;
+
+            float angle_to_target =
+            atan2(targetY - y, targetX - x) * (180.0 / M_PI);
+             angle_to_target = Normalize_Angle(angle_to_target);
+
+            Turn_To_Angle(angle_to_target);
+
+            while (fabs(x - targetX) > 10 || fabs(y - targetY) > 10)
+            {
+                leftMotor.spin(forward);
+                rightMotor.spin(forward);
+                Update_Position(wheel_circumference, x, y, theta,
+                                prev_left_rotation, prev_right_rotation);
+                wait(20, msec);
+            }
+            Stop_Driving();
+
+            angle_to_origin = atan2(-y, -x) * (180.0 / M_PI);
+            angle_to_origin = Normalize_Angle(angle_to_origin);
+
+            Turn_To_Angle(angle_to_origin);
+        }
+
+        leftMotor.spin(forward);
+        rightMotor.spin(forward);
+        Update_Position(wheel_circumference, x, y, theta, prev_left_rotation, prev_right_rotation);
+        wait(20, msec);
+    }
+
+    Stop_Driving();
+}
+
+int main()
+{
+    const float wheel_circumference = 20.0; // cm
+
+    float x = 0.0;
+    float y = 0.0;
+    float theta = 0.0;
+
+    float prev_left_rotation  = 0.0;
+    float prev_right_rotation = 0.0;
+
+    BrainInertial.setHeading(0, degrees);
+    leftMotor.setPosition(0, turns);
+    rightMotor.setPosition(0, turns);
+
+    bool program_shutdown = false;
+
+    while(!program_shutdown)
+    {
+        Update_Position(wheel_circumference, x, y, theta,
+                        prev_left_rotation, prev_right_rotation);
+
+        wait(20, msec);
+
+        // simulate button to exit program
+        if(Controller.ButtonA.pressing()) {
+            program_shutdown = true;
+        }
+    }
+
+    Return_To_Origin(x, y, theta,
+                     wheel_circumference,
+                     prev_left_rotation,
+                     prev_right_rotation);
+}
